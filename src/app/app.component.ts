@@ -12,7 +12,15 @@ export class AppComponent implements OnInit, AfterViewInit {
   map: google.maps.Map;
   geocoder;
   currentAddress: string = "";
+  labels = "Mechanic will reach here";
   marker;
+  mechanicMarkers: google.maps.Marker[] = [];
+  userMarkers: google.maps.Marker[] = [];
+  flightPath: google.maps.Polyline;
+  flightPaths: google.maps.Polyline[] = [];
+  userLocation;
+  draggedLocation;
+
 
   // **********************************************************
   // Angular Google Map Integration 
@@ -107,9 +115,15 @@ export class AppComponent implements OnInit, AfterViewInit {
           lat: this.gpsCoords.lat,
           lng: this.gpsCoords.lng,
         };
+        this.deleteMarkers();
+        this.deleteFlightpath();
+        setTimeout(() => {
+          this.addMarker(myposition, "user")
+        }, 500);
 
-        this.flyToCoordinate(myposition)
-        console.log("Current Location", position.coords.latitude, position.coords.longitude);
+        this.userLocation = myposition;
+        this.flyToCoordinate(myposition);
+        // console.log("Current Location", position.coords.latitude, position.coords.longitude);
       })
     }
   }
@@ -124,7 +138,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         lat: this.gpsCoords.lat,
         lng: this.gpsCoords.lng,
       };
+
+      this.deleteFlightpath();
       this.map.panTo(myposition);
+      this.draggedLocation = myposition;
+      this.createRoute();
       this.flyToCoordinate(myposition);
     });
   }
@@ -141,7 +159,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         lat: this.gpsCoords.lat,
         lng: this.gpsCoords.lng,
       };
-      this.flyToCoordinate(myposition)
+      this.flyToCoordinate(myposition);
     });
   }
 
@@ -175,6 +193,74 @@ export class AppComponent implements OnInit, AfterViewInit {
         }
       }
     )
+  }
+
+  // Adds a marker to the map.
+  addMarker(location: google.maps.LatLngLiteral, type: string) {
+    const marker = new google.maps.Marker({
+      position: location,
+      // label: this.labels,
+      map: this.map,
+      // icon: "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi_hdpi.png"
+    });
+
+    // if (type === "mechanic")
+    //   this.mechanicMarkers.push(marker);
+    // else
+    this.userMarkers.push(marker);
+    console.log(this.userMarkers);
+  }
+
+  createRoute() {
+    // Define a symbol using SVG path notation, with an opacity of 1.
+    const lineSymbol = {
+      path: "M 0,-1 0,1",
+      strokeOpacity: 0.8,
+      scale: 1.5,
+    };
+
+    const line = new google.maps.Polyline({
+      path: [
+        this.userLocation,
+        this.draggedLocation,
+      ],
+      strokeOpacity: 0,
+      icons: [
+        {
+          icon: lineSymbol,
+          offset: "",
+          repeat: "8px",
+        },
+      ],
+      map: this.map,
+    });
+
+    this.flightPaths.push(line)
+    console.log(this.flightPaths);
+  }
+
+  // Deletes all markers in the array by removing references to them.
+  deleteMarkers(): void {
+    this.setMapOnAll();
+    this.mechanicMarkers = [];
+    this.userMarkers = [];
+  }
+
+  // Deletes all markers in the array by removing references to them.
+  setMapOnAll() {
+    for (let i = 0; i < this.mechanicMarkers.length; i++) {
+      this.mechanicMarkers[i].setMap(null);
+    }
+    for (let i = 0; i < this.userMarkers.length; i++) {
+      this.userMarkers[i].setMap(null);
+    }
+  }
+
+  deleteFlightpath() {
+    for (let i = 0; i < this.flightPaths.length; i++) {
+      this.flightPaths[i].setMap(null);
+    }
+    this.flightPaths = [];
   }
 
 }
